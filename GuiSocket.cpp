@@ -1,37 +1,39 @@
 #include "Header.h"
 #include <string> 
-void GuiSocket::ToGUI() {
-
-    sockGUI = socket(AF_INET, SOCK_STREAM, 0);
+GuiSocket::GuiSocket() {
 
 
-    // Initialize winsock
-    WSADATA wsaData;
-    WORD ver = MAKEWORD(2, 2);
-    int wsok = WSAStartup(ver, &wsaData);
+	// Assign socket
+	sockGUI = socket(AF_INET, SOCK_DGRAM, 0);
 
-    // Investigate WSAStartup
-    if (wsok != 0) {
-        std::cout << "Error! could not start WSA" << std::endl;
-        return;
-    }
+	// Startup Winsock
+	WSADATA data;
+	WORD version = MAKEWORD(2, 2);
+	int wSok = WSAStartup(version, &data);
 
-    // Configure address
-    myaddr.sin_family = AF_INET;
-    myaddr.sin_port = htons(9876);
-    inet_pton(AF_INET, "127.0.0.1", &myaddr.sin_addr);
+	// Investigate Winsock
+	if (wSok != 0) {
+		std::cout << "Can't start Winsock! " << std::endl;
+		return;
+	}
+
+	// Set hint structure for the server
+	myaddr.sin_family = AF_INET;
+	myaddr.sin_port = htons(5300);
+
+	inet_pton(AF_INET, "127.0.0.1", &myaddr.sin_addr);
+
 }
+
 void GuiSocket::redraw(int id, Coordinate c) {
-    auto colorID = std::to_string(id);
-    auto xcord = std::to_string(c.x);
-    auto ycord = std::to_string(c.y);
-    std::string datapackage("PAINT;" + colorID + ";" + xcord + ";" + ycord + ";");
-    std::cout << datapackage << std::endl;
+    std::string datapackage = "PAINT;"+std::to_string(id) + ";" + std::to_string(c.x+100) + ";" + std::to_string((c.y*-1)+100) + ";";
+    std::cout << sockGUI << std::endl;
 
 
-    int sendPkg = sendto(sockGUI, (const char*)&datapackage, sizeof(datapackage), 0, (sockaddr*)&myaddr, sizeof(myaddr));
+    int sendPkg = sendto(sockGUI, datapackage.c_str(), datapackage.size(), 0, (sockaddr*)&myaddr, sizeof(myaddr));
+ 
 
     if (sendPkg == SOCKET_ERROR) {
-        std::cout << "Could not send string to GUI!" << std::endl;
+        std::cout << "Error: " << WSAGetLastError() << "\n";
     }
 }
