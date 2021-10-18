@@ -40,7 +40,7 @@ void Client::connectToServer(std::string ipAddress, unsigned int port) {
         MsgHead { sizeof jMsg, 0, 0, Join },
         Human,
         Cube,
-        "Emma"
+        "Vampire"
     };
     send(sock, (char*)&jMsg, sizeof(jMsg), 0);
 
@@ -104,15 +104,19 @@ void Client::start(){
                 }
                 case NewPlayerPosition: {
                     NewPlayerPositionMsg newpos;
-                    bool yourself = false;
                     memcpy(&newpos, recvBuff, sizeof(newpos));
                     if (receivedMsgHead.id == response.id) {
-                        yourself = true;
-                        translate(newpos.pos, yourself, receivedMsgHead.id);
                         pos.x = newpos.pos.x;
                         pos.y = newpos.pos.y;
+                        std::cout << "Your new position is X: " << pos.x
+                            << " Y: " << pos.y << std::endl;
                     }
-                    s.redraw(response.id, newpos.pos);
+                    else {
+                        std::cout << "Client " << receivedMsgHead.id << ":s position is X: " <<
+                            newpos.pos.x << " Y: " << newpos.pos.y << std::endl;
+                    }
+                    s.redraw(receivedMsgHead.id, newpos.pos);
+                    positionSet = true;
                     break;
                   }
                 }
@@ -143,17 +147,6 @@ void Client::start(){
     }
 }
 
-void Client::translate(Coordinate c, bool translated, int id) {
-    pos.x = c.x+100;
-    pos.y = (c.y) + 100;
-    if (translated) {
-        std::cout << "You moved to x-coordinate: " << pos.x << " y-coordinate " << pos.y << std::endl;
-    }
-    else
-    {
-        std::cout << "Player with ID " << id << " move to " " x: " << pos.x << " y: " << pos.y << std::endl;
-    }
-}
     
 void Client::move(Coordinate MovetoPos) {
 
@@ -198,5 +191,5 @@ Client::~Client() {
 }
 int main() {
     Client c;
-    c.connectToServer("83.209.179.218", 5400);
+    c.connectToServer("192.168.1.126", 5400);
 }

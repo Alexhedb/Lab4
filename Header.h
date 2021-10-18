@@ -20,7 +20,7 @@ private:
 	//! Variable used to store a clients latest coordinate 
 	Coordinate pos;
 	//! Boolean stop flag used to terminate the play loop
-	bool positionSet=true;
+	bool positionSet=false;
 	bool stopFlag;
 	void start();
 	void leave();
