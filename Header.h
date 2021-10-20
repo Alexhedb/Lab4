@@ -23,6 +23,10 @@ private:
 	//Booleans to check for stop
 	bool InputKeys =false;
 	bool stop;
+	bool wheld=false;
+	bool aheld = false;
+	bool sheld = false;
+	bool dheld = false;
 
 
 	void start();
