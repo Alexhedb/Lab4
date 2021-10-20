@@ -12,22 +12,23 @@
 class Client {
 private:
 	//! The default client header included in all sent messages
-	MsgHead response;
+	MsgHead MsgToServer;
 	//! The TCP client socket
 	SOCKET sock;
 	//! Tracks if the client has been given a position
 	bool ready;
 	//! Variable used to store a clients latest coordinate 
 	Coordinate pos;
-	//! Boolean stop flag used to terminate the play loop
-	bool positionSet=false;
-	bool stopFlag;
+
+	//Booleans to check for stop
+	bool InputKeys =false;
+	bool stop;
+
+
 	void start();
 	void leave();
 	void move(Coordinate MovetoPos);
-	void translate(Coordinate c, bool b, int id);
 public:
-	~Client();
 	void connectToServer(std::string ipAddress, unsigned int port);
 };
 class GuiSocket {

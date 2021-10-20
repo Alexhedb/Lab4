@@ -28,9 +28,9 @@ GuiSocket::GuiSocket() {
 void GuiSocket::redraw(int id, Coordinate c) {
 	int x = c.x + 100;
 	int y = (c.y * -1) + 100;
-    std::string datapackage = "PAINT;"+std::to_string(id) + ";" + std::to_string(y) + ";" + std::to_string(x) + ";";
+    std::string MsgtoGUI = "PAINT;"+std::to_string(id) + ";" + std::to_string(y) + ";" + std::to_string(x) + ";";
  
-    int sendPkg = sendto(sockGUI, datapackage.c_str(), datapackage.size(), 0, (sockaddr*)&myaddr, sizeof(myaddr));
+    int sendPkg = sendto(sockGUI, MsgtoGUI.c_str(), MsgtoGUI.size(), 0, (sockaddr*)&myaddr, sizeof(myaddr));
  
 
     if (sendPkg == SOCKET_ERROR) {

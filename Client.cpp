@@ -28,14 +28,14 @@ void Client::connectToServer(std::string ipAddress, unsigned int port) {
     int connected = SOCKET_ERROR;
     connected = connect(sock, (sockaddr*)&address, sizeof(address));
     if (connected != SOCKET_ERROR) {
-        std::cout << "Connection successful" << std::endl;
+        std::cout << "Connection successful, if you do not get assigned an ID, game has already started!" << std::endl;
     }
     else {
         std::cout << "Could not connect to server" << std::endl;
         return;
     }
 
-    // Send join message
+    // Create joinMsg
     JoinMsg jMsg{
         MsgHead { sizeof jMsg, 0, 0, Join },
         Human,
@@ -44,15 +44,15 @@ void Client::connectToServer(std::string ipAddress, unsigned int port) {
     };
     send(sock, (char*)&jMsg, sizeof(jMsg), 0);
 
-    // Receive server response
-    char buffer[256] = { '\0*' };
+    // Receive server response from joinMsg
+    char buffer[512] = { '\0' };
     recv(sock, buffer, sizeof(buffer), 0);
     MsgHead JoinMsgResponse;
     memcpy(&JoinMsgResponse, buffer, buffer[0]);
-    response.id=JoinMsgResponse.id;
+    MsgToServer.id=JoinMsgResponse.id;
 
-    std::cout << "Your player ID is: " << response.id << std::endl;
-    stopFlag = false;
+    std::cout << "Your player ID is: " << MsgToServer.id << std::endl;
+    stop = false;
     start();
 }
 
@@ -63,7 +63,7 @@ void Client::start(){
     GuiSocket s;
 
     while (true) {
-        if (stopFlag) {
+        if (stop) {
             return;
         }
         char recvBuff[512] = { '\0' };
@@ -85,27 +85,24 @@ void Client::start(){
             recv(sock, recvBuff, sizeof(recvBuff), 0);
             MsgHead receivedMsgHead;
             memcpy(&receivedMsgHead, recvBuff, sizeof(receivedMsgHead));
-            switch (receivedMsgHead.type) {
-            case Change:
+                if(receivedMsgHead.type==Change){
                 ChangeMsg msg;
                 memcpy(&msg, recvBuff, sizeof(msg));
-                switch (msg.type) {
-                case NewPlayer: {
+                if (msg.type==NewPlayer){
                     NewPlayerMsg nmsg;
                     memcpy(&nmsg, recvBuff, sizeof(nmsg));
                     std::cout << "New player has joined the game with ID: " << receivedMsgHead.id << std::endl;
-                    break;
+                  
                 }
-                case PlayerLeave: {
+                if (msg.type == PlayerLeave) {
                     PlayerLeaveMsg left;
                     memcpy(&left, recvBuff, sizeof(left));
                     std::cout << "Player with ID " << receivedMsgHead.id << " has left the game" << std::endl;
-                    break;
                 }
-                case NewPlayerPosition: {
+                if (msg.type == NewPlayerPosition) {
                     NewPlayerPositionMsg newpos;
-                    memcpy(&newpos, recvBuff, sizeof(newpos));
-                    if (receivedMsgHead.id == response.id) {
+                    memcpy(&newpos, recvBuff, sizeof(newpos));                  
+                    if (receivedMsgHead.id == MsgToServer.id) {
                         pos.x = newpos.pos.x;
                         pos.y = newpos.pos.y;
                         std::cout << "Your new position is X: " << pos.x
@@ -116,14 +113,13 @@ void Client::start(){
                             newpos.pos.x << " Y: " << newpos.pos.y << std::endl;
                     }
                     s.redraw(receivedMsgHead.id, newpos.pos);
-                    positionSet = true;
-                    break;
+                    InputKeys = true;
                   }
-                }
-            }
+                
+             }
         }
         // Check for client input if the game has started
-        if (positionSet == true) {
+        if (InputKeys == true) {
             if (GetAsyncKeyState('W') & 1) {
                 pos.y++;
                 move(pos);
@@ -146,17 +142,15 @@ void Client::start(){
         }
     }
 }
-
-    
 void Client::move(Coordinate MovetoPos) {
 
     // Set client head
-    response.type = Event;
+    MsgToServer.type = Event;
 
     // Create EventMsg
     EventMsg eMsg;
-    eMsg.head = response;
     eMsg.type = Move;
+    eMsg.head = MsgToServer;
 
     // Create MoveEvent
     MoveEvent mEve;
@@ -170,26 +164,23 @@ void Client::move(Coordinate MovetoPos) {
 
 void Client::leave() {
     // Set client head
-    response.type = Leave;
+    MsgToServer.type = Leave;
 
     LeaveMsg bye;
-    bye.head = response;
+    bye.head = MsgToServer;
 
     // Send to server
+    std::cout << "You have left the game" << std::endl;
     send(sock, (char*)&bye, sizeof(bye), 0);
 
-    Client::~Client();
-
-    stopFlag = true;
-
-}
-
-Client::~Client() {
+    //close socket
     WSACleanup();
     closesocket(sock);
+    stop = true;
     return;
+
 }
 int main() {
     Client c;
-    c.connectToServer("192.168.1.126", 5400);
+    c.connectToServer("83.209.179.66", 5300);
 }
