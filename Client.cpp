@@ -1,7 +1,11 @@
 #include "Header.h"
 
+int main() {
+	Client c;
+	c.connectToServer("192.168.1.82", 5300);
+}
 //! Method for connecting to the server
-void Client::connectToServer(std::string ipAddress, unsigned int port) {
+void Client::connectToServer(std::string IP, unsigned int port) {
 
 	// Initialize winsock
 	WSADATA wsaData;
@@ -16,7 +20,7 @@ void Client::connectToServer(std::string ipAddress, unsigned int port) {
 
 	// Configure address
 	sockaddr_in address;
-	std::string strAddress = ipAddress;
+	std::string strAddress = IP;
 	address.sin_family = AF_INET;
 	address.sin_port = htons(port);
 	inet_pton(AF_INET, strAddress.c_str(), &address.sin_addr);
@@ -40,7 +44,7 @@ void Client::connectToServer(std::string ipAddress, unsigned int port) {
 		MsgHead { sizeof jMsg, 0, 0, Join },
 		Human,
 		Cube,
-		"Draken"
+		"Ame"
 	};
 	send(sock, (char*)&jMsg, sizeof(jMsg), 0);
 
@@ -48,7 +52,7 @@ void Client::connectToServer(std::string ipAddress, unsigned int port) {
 	char buffer[512] = { '\0' };
 	recv(sock, buffer, sizeof(buffer), 0);
 	MsgHead JoinMsgResponse;
-	memcpy(&JoinMsgResponse, buffer, buffer[0]);
+	memcpy(&JoinMsgResponse, buffer, sizeof(JoinMsgResponse));
 	MsgToServer.id = JoinMsgResponse.id;
 
 	std::cout << "Your player ID is: " << MsgToServer.id << std::endl;
@@ -77,7 +81,6 @@ void Client::start() {
 		int input = select(NULL, &readset, NULL, NULL, &timeout);
 
 		if (input == SOCKET_ERROR) {
-			std::cout << "select() failed with error:" << WSAGetLastError() << std::endl;
 			return;
 		}
 
@@ -97,7 +100,9 @@ void Client::start() {
 				if (msg.type == PlayerLeave) {
 					PlayerLeaveMsg left;
 					memcpy(&left, recvBuff, sizeof(left));
-					std::cout << "Player with ID " << receivedMsgHead.id << " has left the game" << std::endl;
+					std::cout << "The game has ended due to Player with ID " << receivedMsgHead.id << " has left the game" << std::endl;
+					WSACleanup();
+					closesocket(sock);
 				}
 				if (msg.type == NewPlayerPosition) {
 					NewPlayerPositionMsg newpos;
@@ -112,6 +117,7 @@ void Client::start() {
 						std::cout << "Client " << receivedMsgHead.id << ":s position is X: " <<
 							newpos.pos.x << " Y: " << newpos.pos.y << std::endl;
 					}
+					std::cout << receivedMsgHead.seq_no << std::endl;
 					s.redraw(receivedMsgHead.id, newpos.pos);
 					InputKeys = true;
 				}
@@ -162,49 +168,41 @@ void Client::start() {
 				dheld = false;
 			}
 			if (GetAsyncKeyState('L') & 1) {
+				stop = true;
 				leave();
 			}
 		}
 	}
 }
+//creates a move message witht hep of MsgToServer header
 void Client::move(Coordinate MovetoPos) {
-	// Set client head
 	MsgToServer.type = Event;
 
-	// Create EventMsg
-	EventMsg eMsg;
-	eMsg.type = Move;
-	eMsg.head = MsgToServer;
+	EventMsg eveMsg;
+	eveMsg.type = Move;
+	eveMsg.head = MsgToServer;
 
-	// Create MoveEvent
-	MoveEvent mEve;
-	mEve.event = eMsg;
-	mEve.pos = MovetoPos;
+	MoveEvent movEve;
+	movEve.event = eveMsg;
+	movEve.pos = MovetoPos;
 
-	// Send to server
-	send(sock, (char*)&mEve, sizeof(mEve), 0);
+
+	send(sock, (char*)&movEve, sizeof(movEve), 0);
 
 }
-
+//creates a leave message witht hep of MsgToServer header
 void Client::leave() {
-	// Set client head
 	MsgToServer.type = Leave;
 
 	LeaveMsg bye;
 	bye.head = MsgToServer;
 
-	// Send to server
 	std::cout << "You have left the game" << std::endl;
 	send(sock, (char*)&bye, sizeof(bye), 0);
 
 	//close socket
 	WSACleanup();
 	closesocket(sock);
-	stop = true;
 	return;
 
-}
-int main() {
-	Client c;
-	c.connectToServer("192.168.1.82", 5300);
 }

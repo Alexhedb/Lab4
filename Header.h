@@ -15,8 +15,6 @@ private:
 	MsgHead MsgToServer;
 	//! The TCP client socket
 	SOCKET sock;
-	//! Tracks if the client has been given a position
-	bool ready;
 	//! Variable used to store a clients latest coordinate 
 	Coordinate pos;
 
@@ -33,7 +31,7 @@ private:
 	void leave();
 	void move(Coordinate MovetoPos);
 public:
-	void connectToServer(std::string ipAddress, unsigned int port);
+	void connectToServer(std::string IP, unsigned int port);
 };
 class GuiSocket {
 private:
